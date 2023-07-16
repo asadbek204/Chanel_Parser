@@ -33,8 +33,7 @@ async def main():
         pprint(message.text)
         if message.text is not None and message.text != '':
             await client.send_message(target_channel, message.text)
-        elif isinstance(message, types.Poll):
-            print('Poll')
+        print(type(message))
         print()
         sleep(1)
 
