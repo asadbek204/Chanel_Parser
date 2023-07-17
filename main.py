@@ -35,14 +35,7 @@ async def main():
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
             while True:
-                media = None
-                if isinstance(message.media, types.MessageMediaPhoto):
-                    print(message.media.photo.file_reference)
-                    pprint(message.media.photo.__dict__)
-                    media = types.MessageMediaPhoto(photo=message.media.photo.id)
-                elif isinstance(message.media, types.MessageMediaDocument):
-                    media = types.MessageMediaDocument(message.media.document.id)
-                try_message: Message = Message(id=last_message_id+1, message=message.text, media=message.media.document.id)
+                try_message: Message = Message(id=last_message_id+1, message=message.text, media='photo.jpg')
                 try:
                     print('sending')
                     await client.send_message(target_channel, try_message)
@@ -50,10 +43,11 @@ async def main():
                 except Exception as err:
                     print('second_cycle', err)
                     sleep(1)
+                    break
                 else:
                     print('succesful')
+                    last_message_id += 1
                     break
-                return
     await client.disconnect()
 
 if __name__ == '__main__':
