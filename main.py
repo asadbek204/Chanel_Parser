@@ -1,8 +1,11 @@
 from telethon import TelegramClient
 from telethon import types
+from telethon.tl.custom import Message
+from telethon.errors import rpcerrorlist
 from config import API_ID, API_HASH
 from time import sleep
 from os import remove
+
 
 source_channel = 'savdo'
 target_channel = 'testlalala'
@@ -13,43 +16,57 @@ async def main(source_channel, target_channel, limit):
     await client.start()
     print('started')
     can_t_forward = False
-    a = await client.get_messages(source_channel, limit=limit)
-    for message in a[::-1]:
+    messages = await client.get_messages(source_channel, limit=limit)
+    for message in messages[::-1]:
         print('start sending...')
         if not (isinstance(message, types.MessageService) or can_t_forward):
-            while True:
+            try:
+                await client.send_message(target_channel, message)
+            except rpcerrorlist.ChatForwardsRestrictedError as err:
+                print(f'first_cycle type(err):{type(err)}\n', err)
+                can_t_forward = True
+            except rpcerrorlist.MediaCaptionTooLongError as err:
+                print(err)
+                caption = message.text.split('\n')
                 try:
-                    await client.send_message(target_channel, message)
-                except Exception as err:
-                    print('first_cycle', err)
+                    await client.send_message(target_channel, message='\n'.join(caption[:len(caption)//2]), file=message.media)
+                    await client.send_message(target_channel, message='\n'.join(caption[len(caption)//2:]))
+                except:
+                    print('going to next_try')
                     can_t_forward = True
-                    break
                 else:
                     print('succesful')
-                    break
-        print(can_t_forward)
+            except Exception as err:
+                print(f'first_cycle type(err):{type(err)}\n', err)
+            else:
+                print('succesful')
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
-            media = None
-            if not message.media is None:
-                media = await client.download_media(message)
-            while True:
+            media = await Message.download_media(message)
+            try:
+                print('sending')
+                await client.send_message(target_channel, message=message.text, file=media)
+                print('sended')
+            except rpcerrorlist.MediaCaptionTooLongError as err:
+                print(err)
+                caption = message.text.split('\n')
                 try:
-                    print('sending')
-                    if not media is None:
-                        await client.send_file(target_channel, file=media, caption=message.text)
-                    else:
-                        await client.send_message(target_channel, message=message.text)
-                    print('sended')
+                    await client.send_message(target_channel, message='\n'.join(caption[:len(caption)//2]), file=media)
+                    await client.send_message(target_channel, message='\n'.join(caption[len(caption)//2:]))
                 except Exception as err:
-                    print('second_cycle', err)
-                    sleep(1)
-                    break
+                    print(f'second_cycle::second_try type(err):{type(err)}', err)
                 else:
                     print('succesful')
-                    break
-            remove(media)
-            print('\n', '-'*20)
+            except Exception as err:
+                print(f'second_cycle type(err):{type(err)}\n', err)
+                sleep(1)
+            else:
+                print('succesful')
+            finally:
+                print(f'cleaning... {media}')
+                remove(media)
+                print('cleaned!!!')
+        print('\n', '-'*20, '\n')
     await client.disconnect()
 
 if __name__ == '__main__':
