@@ -1,18 +1,17 @@
 from telethon import TelegramClient
-from telethon import types, helpers
+from telethon import types
 from telethon.tl.custom import Message
 from telethon.errors import rpcerrorlist
 from config import API_ID, API_HASH
 from time import sleep
 from os import remove
 
-async def main(client: TelegramClient, source_channel, target_channel, limit):
+async def main(client: TelegramClient, source_channel, target_channel, start, limit):
     await client.start()
     print('started')
     can_t_forward = False
     messages = await client.get_messages(source_channel, limit=limit)
-    for message in messages[::-1]:
-        print('start sending...')
+    for message in messages[:-start:-1]:
         if not (isinstance(message, types.MessageService) or can_t_forward):
             try:
                 await client.send_message(target_channel, message)
@@ -34,6 +33,8 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
                 print(f'first_cycle type(err):{type(err)}\n', err)
             else:
                 print('succesful')
+                print('\n', '-'*20, '\n')
+                continue
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
             media = await Message.download_media(message)
@@ -61,13 +62,14 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
                     print(f'cleaning... {media}')
                     remove(media)
                     print('cleaned!!!')
-        print('\n', '-'*20, '\n')
+                print('\n', '-'*20, '\n')
     await client.disconnect()
 
 if __name__ == '__main__':
     import asyncio
+    start = 3
     source_channel = 'savdo'
     target_channel = 'testlalala'
     limit = 10
     client = TelegramClient('session_name', API_ID, API_HASH)
-    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, limit=limit))
+    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, start=start, limit=limit))
