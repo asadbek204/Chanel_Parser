@@ -57,9 +57,10 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
             else:
                 print('succesful')
             finally:
-                print(f'cleaning... {media}')
-                remove(media)
-                print('cleaned!!!')
+                if not media is None:
+                    print(f'cleaning... {media}')
+                    remove(media)
+                    print('cleaned!!!')
         print('\n', '-'*20, '\n')
     await client.disconnect()
 
