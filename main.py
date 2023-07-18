@@ -17,7 +17,7 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
             try:
                 await client.send_message(target_channel, message)
             except rpcerrorlist.ChatForwardsRestrictedError as err:
-                print(f'first_cycle type(err):{type(err)}\n', err)
+                print(err)
                 can_t_forward = True
             except rpcerrorlist.MediaCaptionTooLongError as err:
                 print(err)
