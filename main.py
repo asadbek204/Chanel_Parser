@@ -1,22 +1,19 @@
 from telethon import TelegramClient
 from telethon import types
-from telethon.tl.patched import Message
 from config import API_ID, API_HASH
 from time import sleep
 from os import remove
-from pprint import pprint
 
 source_channel = 'savdo'
 target_channel = 'testlalala'
+limit = 10
 client = TelegramClient('session_name', API_ID, API_HASH)
 
-async def main():
+async def main(source_channel, target_channel, limit):
     await client.start()
     print('started')
     can_t_forward = False
-    last_message_from_target = [await client.get_messages(target_channel, limit=1)][0][0]
-    last_message_id = last_message_from_target.id
-    a = await client.get_messages(source_channel, limit=10)
+    a = await client.get_messages(source_channel, limit=limit)
     for message in a[::-1]:
         print('start sending...')
         if not (isinstance(message, types.MessageService) or can_t_forward):
@@ -28,7 +25,6 @@ async def main():
                     can_t_forward = True
                     break
                 else:
-                    last_message_id += 1
                     print('succesful')
                     break
         print(can_t_forward)
@@ -46,7 +42,6 @@ async def main():
                     break
                 else:
                     print('succesful')
-                    last_message_id += 1
                     break
             remove(media)
             print('\n', '-'*20)
@@ -54,4 +49,4 @@ async def main():
 
 if __name__ == '__main__':
     import asyncio
-    asyncio.run(main())
+    asyncio.run(main(source_channel=source_channel, target_channel=target_channel, limit=limit))
