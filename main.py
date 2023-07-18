@@ -10,8 +10,8 @@ async def main(client: TelegramClient, source_channel, target_channel, start, li
     await client.start()
     print('started')
     can_t_forward = False
-    messages = await client.get_messages(source_channel, limit=limit)
-    for message in messages[:-start:-1]:
+    messages = (await client.get_messages(source_channel, limit=limit))[::-1]
+    for message in messages[start:]:
         if not (isinstance(message, types.MessageService) or can_t_forward):
             try:
                 await client.send_message(target_channel, message)
