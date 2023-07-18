@@ -1,18 +1,12 @@
 from telethon import TelegramClient
-from telethon import types
+from telethon import types, helpers
 from telethon.tl.custom import Message
 from telethon.errors import rpcerrorlist
 from config import API_ID, API_HASH
 from time import sleep
 from os import remove
 
-
-source_channel = 'savdo'
-target_channel = 'testlalala'
-limit = 10
-client = TelegramClient('session_name', API_ID, API_HASH)
-
-async def main(source_channel, target_channel, limit):
+async def main(client: TelegramClient, source_channel, target_channel, limit):
     await client.start()
     print('started')
     can_t_forward = False
@@ -71,4 +65,8 @@ async def main(source_channel, target_channel, limit):
 
 if __name__ == '__main__':
     import asyncio
-    asyncio.run(main(source_channel=source_channel, target_channel=target_channel, limit=limit))
+    source_channel = 'savdo'
+    target_channel = 'testlalala'
+    limit = 10
+    client = TelegramClient('session_name', API_ID, API_HASH)
+    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, limit=limit))
