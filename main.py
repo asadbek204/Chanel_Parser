@@ -36,6 +36,7 @@ async def main(client: TelegramClient, source_channel, target_channel, start, li
                 print('\n', '-'*20, '\n')
                 continue
         if not isinstance(message, types.MessageService) and can_t_forward:
+            print('try sending...')
             media = await Message.download_media(message)
             try:
                 await client.send_message(target_channel, message=message.text, file=media)
