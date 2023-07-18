@@ -30,11 +30,16 @@ async def main(source_channel, target_channel, limit):
         print(can_t_forward)
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
-            media = await client.download_media(message)
+            media = None
+            if not message.media is None:
+                media = await client.download_media(message)
             while True:
                 try:
                     print('sending')
-                    await client.send_file(target_channel, file=media, caption=message.text)
+                    if not media is None:
+                        await client.send_file(target_channel, file=media, caption=message.text)
+                    else:
+                        await client.send_message(target_channel, message=message.text)
                     print('sended')
                 except Exception as err:
                     print('second_cycle', err)
