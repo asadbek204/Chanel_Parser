@@ -1,4 +1,10 @@
 venv
-session_name.session-journal
-session_name.session
+*.session-journal
+*.session
 __pycache__/
+*.mp4
+*jpg
+*.mp3
+*.png
+*.JPEG
+*.avi
