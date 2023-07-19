@@ -44,7 +44,7 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
                 continue
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
-            media = Message.download_media(message)
+            media = await Message.download_media(message)
             try:
                 await client.send_message(target_channel, message=message.text, file=media)
             except rpcerrorlist.MediaCaptionTooLongError as err:
