@@ -1,16 +1,32 @@
 from telethon import TelegramClient
 from telethon import types
-from telethon.tl.custom import Message
 from telethon.errors import rpcerrorlist
+from FastTelethon import download_file
 from config import API_ID, API_HASH
-from time import sleep
+from time import sleep, perf_counter
 from os import remove
 
-async def main(client: TelegramClient, source_channel, target_channel, start):
+async def send_long_caption(client: TelegramClient, message, media, err):
+    print(err)
+    sep = '\n'
+    caption = message.text.split('\n')
+    if len(caption) <= 2:
+        sep = ' '
+        caption = message.text.split()
+    try:
+        await client.send_message(target_channel, message=sep.join(caption[:len(caption)//2]), file=media)
+        await client.send_message(target_channel, message=sep.join(caption[len(caption)//2:]))
+    except Exception as err:
+        print(err)
+        return True
+    else:
+        print('succesful')
+
+async def main(client: TelegramClient, source_channel, target_channel, limit):
     await client.start()
     print('started')
     can_t_forward = False
-    messages = (await client.get_messages(source_channel, limit=start))
+    messages = (await client.get_messages(source_channel, limit=limit))
     for message in messages[::-1]:
         if not (isinstance(message, types.MessageService) or can_t_forward):
             try:
@@ -19,16 +35,7 @@ async def main(client: TelegramClient, source_channel, target_channel, start):
                 print(err)
                 can_t_forward = True
             except rpcerrorlist.MediaCaptionTooLongError as err:
-                print(err)
-                caption = message.text.split('\n')
-                try:
-                    await client.send_message(target_channel, message='\n'.join(caption[:len(caption)//2]), file=message.media)
-                    await client.send_message(target_channel, message='\n'.join(caption[len(caption)//2:]))
-                except:
-                    print('going to next_try')
-                    can_t_forward = True
-                else:
-                    print('succesful')
+                can_t_forward = await send_long_caption(client, message, message.media, f'first_cycle: {err}')
             except Exception as err:
                 print(f'first_cycle type(err):{type(err)}\n', err)
             else:
@@ -37,19 +44,15 @@ async def main(client: TelegramClient, source_channel, target_channel, start):
                 continue
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
-            media = await Message.download_media(message)
+            media = None
+            if not message.media is None:
+                media = f'file.{message.media.document.mime_type.split("/")[-1]}'
+                with open(media, 'wb') as file:
+                    await download_file(client, message.media.document, file)
             try:
                 await client.send_message(target_channel, message=message.text, file=media)
             except rpcerrorlist.MediaCaptionTooLongError as err:
-                print(err)
-                caption = message.text.split('\n')
-                try:
-                    await client.send_message(target_channel, message='\n'.join(caption[:len(caption)//2]), file=media)
-                    await client.send_message(target_channel, message='\n'.join(caption[len(caption)//2:]))
-                except Exception as err:
-                    print(f'second_cycle::second_try type(err):{type(err)}', err)
-                else:
-                    print('succesful')
+                await send_long_caption(client, message, media, f'second_cycle: {err}')
             except Exception as err:
                 print(f'second_cycle type(err):{type(err)}\n', err)
                 sleep(1)
@@ -65,8 +68,11 @@ async def main(client: TelegramClient, source_channel, target_channel, start):
 
 if __name__ == '__main__':
     import asyncio
-    start = 3
+    limit = 10
     source_channel = 'savdo'
-    target_channel = 'testlalala'
+    target_channel = 'chanel_for_test'
     client = TelegramClient('session_name', API_ID, API_HASH)
-    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, start=start))
+    start_time = perf_counter()
+    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, limit=limit))
+    end_time = perf_counter()
+    print(end_time-start_time)
