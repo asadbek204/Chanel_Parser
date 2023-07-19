@@ -29,7 +29,6 @@ log: logging.Logger = logging.getLogger("telethon")
 TypeLocation = Union[Document, InputDocumentFileLocation, InputPeerPhotoFileLocation,
                      InputFileLocation, InputPhotoFileLocation]
 
-
 class DownloadSender:
     client: TelegramClient
     sender: MTProtoSender
@@ -55,7 +54,6 @@ class DownloadSender:
 
     def disconnect(self) -> Awaitable[None]:
         return self.sender.disconnect()
-
 
 class UploadSender:
     client: TelegramClient
@@ -96,7 +94,6 @@ class UploadSender:
         if self.previous:
             await self.previous
         return await self.sender.disconnect()
-
 
 class ParallelTransferrer:
     client: TelegramClient
@@ -226,9 +223,7 @@ class ParallelTransferrer:
         log.debug("Parallel download finished, cleaning up connections")
         await self._cleanup()
 
-
 parallel_transfer_locks: DefaultDict[int, asyncio.Lock] = defaultdict(lambda: asyncio.Lock())
-
 
 def stream_file(file_to_stream: BinaryIO, chunk_size=1024):
     while True:
@@ -236,7 +231,6 @@ def stream_file(file_to_stream: BinaryIO, chunk_size=1024):
         if not data_read:
             break
         yield data_read
-
 
 async def _internal_transfer_to_telegram(client: TelegramClient,
                                          response: BinaryIO,
@@ -275,7 +269,6 @@ async def _internal_transfer_to_telegram(client: TelegramClient,
         return InputFileBig(file_id, part_count, "upload"), file_size
     else:
         return InputFile(file_id, part_count, "upload", hash_md5.hexdigest()), file_size
-
 
 async def download_file(client: TelegramClient,
                         location: TypeLocation,

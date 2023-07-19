@@ -12,3 +12,4 @@ __pycache__/
 *.avi
 *.MOV
 *.txt
+!requirements.txt
