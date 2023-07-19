@@ -1,7 +1,7 @@
 from telethon import TelegramClient
 from telethon import types
 from telethon.errors import rpcerrorlist
-from FastTelethon import download_file
+from telethon.tl.custom import Message
 from config import API_ID, API_HASH
 from time import sleep, perf_counter
 from os import remove
@@ -44,11 +44,7 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
                 continue
         if not isinstance(message, types.MessageService) and can_t_forward:
             print('try sending...')
-            media = None
-            if not message.media is None:
-                media = f'file.{message.media.document.mime_type.split("/")[-1]}'
-                with open(media, 'wb') as file:
-                    await download_file(client, message.media.document, file)
+            media = Message.download_media(message)
             try:
                 await client.send_message(target_channel, message=message.text, file=media)
             except rpcerrorlist.MediaCaptionTooLongError as err:
