@@ -4,7 +4,8 @@ from telethon.errors import rpcerrorlist
 from telethon.tl.custom import Message
 from config import API_ID, API_HASH
 from time import sleep, perf_counter
-from os import remove
+from os import listdir
+
 
 async def send_long_caption(client: TelegramClient, message, media, err):
     print(err)
@@ -55,7 +56,12 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
         if not isinstance(message, types.MessageService) and can_t_forward:
             while True:
                 print('try sending...')
-                media = await Message.download_media(message)
+                if len(message.media.document.attributes) > 0:
+                    media_name = message.media.document.attributes[1].file_name.replace(':', '_')
+                    print(media_name)
+                    media = 'videos/'+media_name if media_name in videos else await Message.download_media(message)
+                else:
+                    media = await Message.download_media(message)
                 try:
                     await client.send_message(target_channel, message=message.text, file=media)
                 except rpcerrorlist.MediaCaptionTooLongError as err:
@@ -71,7 +77,6 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
                 finally:
                     if not media is None:
                         print(f'cleaning... {media}')
-                        remove(media)
                         print('cleaned!!!')
                     print('\n', '-'*20, '\n')
                     break
@@ -79,10 +84,12 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
     await client.disconnect()
 
 if __name__ == '__main__':
+    videos = listdir(r"videos/")
+    print(videos)
     import asyncio
     limit = 10000000
     source_channel = -1001947604230
-    target_channel = 'Quramboyevv'
+    target_channel = 1455978952
     client = TelegramClient('session_name', API_ID, API_HASH)
     start_time = perf_counter()
     asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, limit=limit))
