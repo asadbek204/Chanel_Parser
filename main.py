@@ -56,12 +56,15 @@ async def main(client: TelegramClient, source_channel, target_channel, limit):
         if not isinstance(message, types.MessageService) and can_t_forward:
             while True:
                 print('try sending...')
-                if len(message.media.document.attributes) > 0:
-                    media_name = message.media.document.attributes[1].file_name.replace(':', '_')
-                    print(media_name)
-                    media = 'videos/'+media_name if media_name in videos else await Message.download_media(message)
-                else:
-                    media = await Message.download_media(message)
+                try:
+                    if len(message.media.document.attributes) > 0:
+                        media_name = message.media.document.attributes[1].file_name.replace(':', '_')
+                        print(media_name)
+                        media = 'videos/'+media_name if media_name in videos else await Message.download_media(message)
+                    else:
+                        break
+                except:
+                    break
                 try:
                     await client.send_message(target_channel, message=message.text, file=media)
                 except rpcerrorlist.MediaCaptionTooLongError as err:
@@ -87,7 +90,7 @@ if __name__ == '__main__':
     videos = listdir(r"videos/")
     print(videos)
     import asyncio
-    limit = 10000000
+    limit = 76
     source_channel = -1001947604230
     target_channel = 1455978952
     client = TelegramClient('session_name', API_ID, API_HASH)
