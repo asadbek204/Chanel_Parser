@@ -1,10 +1,20 @@
+
+```bash
 python3 -m venv venv
+```
+```bash
 source venv/bin/activate
-pip install telethon
-python main.py
+```
+```bash
+pip install -r requirements.txt
+```
 
-1. enter your tel number
-2. enter your code
-3. enter your privacy code
+```bash
+uvicorn api:spp
+```
 
-wait...
+---
+
+* and open http://127.0.0.1:8000/docs or http://localhost:8000/docs
+
+---

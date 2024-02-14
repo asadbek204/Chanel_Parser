@@ -66,12 +66,16 @@ async def get_account(username: str, password: str):
 
 @app.on_event('startup')
 async def startup():
-    with open('sessions.txt') as file:
-        global sessions
-        try:
-            sessions = json.loads(file.read())
-        except Exception as e:
-            print(e)
+    try:
+        with open('sessions.txt') as file:
+            global sessions
+            try:
+                sessions = json.loads(file.read())
+            except json.decoder.JSONDecodeError:
+                sessions = {}
+    except FileNotFoundError:
+        with open('sessions.txt', 'x') as created:
+            created.write(json.dumps(sessions))
 
 
 @app.on_event('shutdown')
