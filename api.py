@@ -7,7 +7,7 @@ import json
 
 app = FastAPI(title="Channel Parser")
 sessions: dict[str, dict] = {}
-
+sessions_file_name = 'sessions.json'
 
 async def get_client(username: str, password: str) -> TelegramClient:
     client = sessions.get(username, False)
@@ -66,19 +66,16 @@ async def get_account(username: str, password: str):
 
 @app.on_event('startup')
 async def startup():
+    global sessions
     try:
-        with open('sessions.txt') as file:
-            global sessions
-            try:
-                sessions = json.loads(file.read())
-            except json.decoder.JSONDecodeError:
-                sessions = {}
+        sessions = json.load(open(sessions_file_name))
+    except json.decoder.JSONDecodeError:
+        sessions = {}
     except FileNotFoundError:
-        with open('sessions.txt', 'x') as created:
+        with open(sessions_file_name, 'x') as created:
             created.write(json.dumps(sessions))
 
 
 @app.on_event('shutdown')
 async def shutdown():
-    with open('sessions.txt', 'w') as file:
-        file.write(json.dumps(sessions))
+    json.dump(sessions, open(sessions_file_name, 'w'))
