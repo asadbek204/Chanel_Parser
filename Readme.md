@@ -10,7 +10,7 @@ pip install -r requirements.txt
 ```
 
 ```bash
-uvicorn api:spp
+uvicorn api:app
 ```
 
 ---
