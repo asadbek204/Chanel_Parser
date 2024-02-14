@@ -2,13 +2,11 @@ from telethon import TelegramClient
 from telethon import types
 from telethon.errors import rpcerrorlist
 from telethon.tl.custom import Message
-from config import API_ID, API_HASH
-from time import sleep, perf_counter
-from os import listdir
+from time import sleep
+from os import remove
 
 
-async def send_long_caption(client: TelegramClient, message, media, err):
-    print(err)
+async def send_long_caption(client: TelegramClient, message, media, target_channel):
     sep = '\n'
     caption = message.text.split('\n')
     if len(caption) <= 2:
@@ -17,84 +15,53 @@ async def send_long_caption(client: TelegramClient, message, media, err):
     try:
         await client.send_message(target_channel, message=sep.join(caption[:len(caption)//2]), file=media)
         await client.send_message(target_channel, message=sep.join(caption[len(caption)//2:]))
-    except Exception as err:
-        print(err)
+    except Exception as e:
+        print("sending long caption error", e)
         return True
     else:
-        print('succesful')
+        return False
 
-async def main(client: TelegramClient, source_channel, target_channel, limit):
-    await client.start()
-    can_t_forward = False
-    try:
+
+async def copy_messages_from_channel(client: TelegramClient, source_channel: int | str, target_channel: int | str, limit: int = 1):
+    async with client as client:
+        try:
+            await client.send_message('me', f'started from {source_channel} to {target_channel}')
+        except rpcerrorlist.FloodWaitError:
+            pass
+        can_t_forward = False
         messages = await client.get_messages(source_channel, limit=limit)
-    except Exception as err:
-        print(err)
-    print('started')
-    for message in messages[::-1]:
-        if not (isinstance(message, types.MessageService) or can_t_forward):
+        for message in messages[::-1]:
             while True:
-                print('sending...')
-                try:
-                    await client.send_message(target_channel, message)
-                except rpcerrorlist.ChatForwardsRestrictedError as err:
-                    print(err)
-                    can_t_forward = True
-                except rpcerrorlist.MediaCaptionTooLongError as err:
-                    can_t_forward = await send_long_caption(client, message, message.media, f'first_cycle: {err}')
-                except rpcerrorlist.FloodWaitError as err:
-                    print(err)
-                    sleep(int(str(err).split()[3])/2)
-                    continue
-                except Exception as err:
-                    print(f'first_cycle type(err):{type(err)}\n', err)
-                else:
-                    print('succesful')
-                finally:
-                    print('\n', '-'*20, '\n')
-                    break
-        if not isinstance(message, types.MessageService) and can_t_forward:
-            while True:
-                print('try sending...')
-                try:
-                    if len(message.media.document.attributes) > 0:
-                        media_name = message.media.document.attributes[1].file_name.replace(':', '_')
-                        print(media_name)
-                        media = 'videos/'+media_name if media_name in videos else await Message.download_media(message)
+                if not (isinstance(message, types.MessageService) or can_t_forward):
+                    try:
+                        await client.send_message(target_channel, message)
+                    except rpcerrorlist.ChatForwardsRestrictedError as err:
+                        await client.send_message('me', str(err))
+                        can_t_forward = True
+                        continue
+                    except rpcerrorlist.MediaCaptionTooLongError:
+                        can_t_forward = await send_long_caption(client, message, message.media, target_channel)
+                        continue
+                    except rpcerrorlist.FloodWaitError as err:
+                        print(f'sleep for: {err.seconds} seconds')
+                        sleep(err.seconds)
+                        continue
+                if not isinstance(message, types.MessageService) and can_t_forward:
+                    media = await Message.download_media(message)
+                    file = await client.upload_file(media)
+                    try:
+                        await client.send_message(target_channel, message=message.text, file=file)
+                    except rpcerrorlist.MediaCaptionTooLongError:
+                        await send_long_caption(client, message, file, target_channel)
+                        continue
+                    except rpcerrorlist.FloodWaitError as err:
+                        print(f'sleep for: {err.seconds} seconds')
+                        sleep(err.seconds)
+                        continue
                     else:
-                        break
-                except:
-                    break
-                try:
-                    await client.send_message(target_channel, message=message.text, file=media)
-                except rpcerrorlist.MediaCaptionTooLongError as err:
-                    await send_long_caption(client, message, media, f'second_cycle: {err}')
-                except rpcerrorlist.FloodWaitError as err:
-                    print(err)
-                    sleep(int(str(err).split()[3])/2)
-                    continue
-                except Exception as err:
-                    print(f'second_cycle type(err):{type(err)}\n', err)
-                else:
-                    print('succesful')
-                finally:
-                    if not media is None:
-                        print(f'cleaning... {media}')
-                        print('cleaned!!!')
-                    print('\n', '-'*20, '\n')
-                    break
-    print(len(messages))
-    await client.disconnect()
-
-if __name__ == '__main__':
-    videos = listdir(r"videos/")
-    print(videos)
-    import asyncio
-    limit = 76
-    source_channel = -1001947604230
-    target_channel = 1455978952
-    client = TelegramClient('session_name', API_ID, API_HASH)
-    start_time = perf_counter()
-    asyncio.run(main(client=client, source_channel=source_channel, target_channel=target_channel, limit=limit))
-    end_time = perf_counter()
-    print(end_time-start_time)
+                        if media is not None:
+                            remove(media)
+                        print('\n', '-'*20, '\n')
+                sleep(4)
+                break
+        await client.send_message('me', f'finished copy from {source_channel} to {target_channel}')
