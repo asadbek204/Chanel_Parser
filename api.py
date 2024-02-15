@@ -1,6 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from main import copy_messages_from_channel
+from telethon.errors import rpcerrorlist
 from telethon import TelegramClient
+from main import copy_messages_from_channel
 from config import API_ID, API_HASH
 from hashlib import sha256
 import json
@@ -54,7 +55,13 @@ async def authorization(username: str, password: str, phone: str):
 async def sign_in(username: str, password: str, phone: str, verification_code: str, two_factor_auth_password: str | None = None):
     client = await get_client(username, password)
     await client.connect()
-    await client.sign_in(phone, verification_code, password=two_factor_auth_password, phone_code_hash=sessions[username]['phone_code_hash'])
+    try:
+        await client.sign_in(phone=phone, code=verification_code, phone_code_hash=sessions[username]['phone_code_hash'])
+    except rpcerrorlist.SessionPasswordNeededError:
+        try:
+            await client.sign_in(password=two_factor_auth_password)
+        except rpcerrorlist.SessionPasswordNeededError as err:
+            raise HTTPException(status_code=404, detail=str(err))
     await client.disconnect()
     return {'status': 'success', 'message': 'sign in successful'}
 
