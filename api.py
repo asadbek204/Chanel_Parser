@@ -9,6 +9,7 @@ app = FastAPI(title="Channel Parser")
 sessions: dict[str, dict] = {}
 sessions_file_name = 'sessions.json'
 
+
 async def get_client(username: str, password: str) -> TelegramClient:
     client = sessions.get(username, False)
     if not client:
@@ -25,7 +26,7 @@ async def parse_channel(
         password: str,
         src_channel: int | str,
         target_channel: int | str,
-        limit: int = 1
+        limit: int | None = None
         ):
     client = await get_client(username, password)
     background_tasks.add_task(copy_messages_from_channel, client, src_channel, target_channel, limit)
