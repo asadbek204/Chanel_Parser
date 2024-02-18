@@ -1,0 +1,35 @@
+import time
+
+from asyncio import sleep
+from .user_messages import get_messages
+from .send_message import message_sender
+
+from telethon import TelegramClient
+from telethon.errors import rpcerrorlist
+
+
+async def copy_messages_from_channel(
+        client: TelegramClient,
+        source_channel: int | str,
+        target_channel: int | str,
+        limit: int = 1
+        ) -> None:
+    start_time = time.time()
+    async with client as client:
+        try:
+            await client.send_message('me', f'started from {source_channel} to {target_channel}')
+        except rpcerrorlist.FloodWaitError as err:
+            await sleep(err.seconds)
+            await client.send_message('me', f'waited for {err.seconds}')
+        messages = await get_messages(client, source_channel, limit)
+        messages = messages[:limit]
+        messages.reverse()
+        result = False
+        for message in messages:
+            result = not await message_sender(client, message, target_channel)
+        if result:
+            await client.send_message(
+                'me',
+                f'finished copy from {source_channel} to {target_channel} successfully ({"%.2f" % (time.time() - start_time)}s)')
+            return
+        await client.send_message('me', f'finished copy from {source_channel} to {target_channel} with error')

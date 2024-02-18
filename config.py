@@ -1,2 +1,5 @@
 API_ID = 28728095
 API_HASH = '5c7ff700194a7b843891db74bab8c4d9'
+
+
+LOGS_PATH = 'errors.txt'
