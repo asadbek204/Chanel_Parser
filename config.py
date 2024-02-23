@@ -1,5 +1,13 @@
-API_ID = 28728095
-API_HASH = '5c7ff700194a7b843891db74bab8c4d9'
+from os import environ
+from dotenv import load_dotenv
 
+load_dotenv('.env')
 
-LOGS_PATH = 'errors.txt'
+API_ID = environ.get('API_ID')
+API_HASH = environ.get("API_HASH")
+LOGS_PATH = environ.get("LOGS_PATH")
+SECRET_KEY = environ.get("SECRET_KEY")
+COOKIE_NAME = environ.get("COOKIE_NAME")
+COOKIE_MAX_AGE = environ.get("COOKIE_MAX_AGE")
+AUTH_BACKEND_NAME = environ.get("AUTH_BACKEND_NAME")
+LIFE_TIME_SECONDS = environ.get("LIFE_TIME_SECONDS")
