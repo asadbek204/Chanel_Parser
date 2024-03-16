@@ -8,52 +8,52 @@ from hashlib import sha256
 from parsing.parser_app import copy_messages_from_channel
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
-from fastapi_users import FastAPIUsers
-from database.models import User
-from auth.manager import get_user_manager
-from auth.auth import auth_backend
-from auth.schemas import UserRead, UserCreate, UserUpdate
+# from fastapi_users import FastAPIUsers
+# from database.models import User
+# from auth.manager import get_user_manager
+# from auth.auth import auth_backend
+# from auth.schemas import UserRead, UserCreate, UserUpdate
 
 
 app = FastAPI(title="Channel Parser")
 sessions: dict[str, dict] = {}
 sessions_file_name = 'sessions.json'
 
-fastapi_users = FastAPIUsers[User, int](
-    get_user_manager,
-    [auth_backend],
-)
-
-app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/auth",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-    prefix="/auth/jwt",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_verify_router(UserRead),
-    prefix="/auth",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_reset_password_router(),
-    prefix="/auth",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_users_router(UserRead, UserUpdate),
-    prefix="/users",
-    tags=["users"],
-)
-
+# fastapi_users = FastAPIUsers[User, int](
+#     get_user_manager,
+#     [auth_backend],
+# )
+#
+# app.include_router(
+#     fastapi_users.get_register_router(UserRead, UserCreate),
+#     prefix="/auth",
+#     tags=["auth"],
+# )
+#
+# app.include_router(
+#     fastapi_users.get_auth_router(auth_backend),
+#     prefix="/auth/jwt",
+#     tags=["auth"],
+# )
+#
+# app.include_router(
+#     fastapi_users.get_verify_router(UserRead),
+#     prefix="/auth",
+#     tags=["auth"],
+# )
+#
+# app.include_router(
+#     fastapi_users.get_reset_password_router(),
+#     prefix="/auth",
+#     tags=["auth"],
+# )
+#
+# app.include_router(
+#     fastapi_users.get_users_router(UserRead, UserUpdate),
+#     prefix="/users",
+#     tags=["users"],
+# )
+#
 
 async def create_client(username: str, password: str, session_name: str, phone_code_hash: str):
     sessions[username] = {'password': sha256(password.encode()).hexdigest(), 'session_name': session_name, 'phone_code_hash': phone_code_hash}
@@ -69,7 +69,7 @@ async def get_client(username: str, password: str) -> TelegramClient:
 
 
 async def client_for_sign_in(username: str, password: str):
-    client = get_client(username, password)
+    client = await get_client(username, password)
     return client, sessions.get(username)['phone_code_hash']
 
 
@@ -113,6 +113,7 @@ async def authorization(username: str, password: str, phone: str):
 @app.post('/account/sign_in')
 async def sign_in(phone: str, verification_code: str, two_factor_auth_password: str | None = None, client: [TelegramClient, str] = Depends(client_for_sign_in)):
     client, phone_code_hash = client
+    await client.connect()
     try:
         await client.sign_in(phone=phone, code=verification_code, phone_code_hash=phone_code_hash)
     except rpcerrorlist.SessionPasswordNeededError:
@@ -129,7 +130,6 @@ async def get_account(client: TelegramClient = Depends(get_client)):
     await client.connect()
     try:
         me = (await client.get_me()).__dict__
-        print(me)
         return {'status': 'success', 'message': 'account successfully found', 'detail': {
             'id': me.get('id'),
             'username': me.get('username'),

@@ -33,6 +33,10 @@ async def get_messages(client: TelegramClient, source_channel: str, limit: int, 
     messages: list[Message] = await client.get_messages(**params)
     messages, all_group = get_media_groups(messages)
     while len(messages) < limit or not all_group:
-        messages.extend(await get_messages(client, source_channel, limit, messages[-1].id))
-        messages, all_group = get_media_groups(messages)
+        try:
+            messages.extend(await get_messages(client, source_channel, limit, messages[-1].id))
+            messages, all_group = get_media_groups(messages)
+        except Exception as err:
+            print(err)
+            break
     return messages
