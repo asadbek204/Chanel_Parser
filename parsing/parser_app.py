@@ -27,6 +27,7 @@ async def copy_messages_from_channel(
         try:
             await client.send_message('me', f'started from {source_channel} to {target_channel}')
         except rpcerrorlist.FloodWaitError as err:
+            print(err.seconds)
             await sleep(err.seconds)
             await client.send_message('me', f'waited for {err.seconds}')
         try:

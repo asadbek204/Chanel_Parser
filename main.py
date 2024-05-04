@@ -111,7 +111,7 @@ async def authorization(username: str, password: str, phone: str):
 
 
 @app.post('/account/sign_in')
-async def sign_in(phone: str, verification_code: str, two_factor_auth_password: str | None = None, client: [TelegramClient, str] = Depends(client_for_sign_in)):
+async def sign_in(phone: str, verification_code: str, two_factor_auth_password: str | None = None, client: tuple[TelegramClient, str] = Depends(client_for_sign_in)):
     client, phone_code_hash = client
     await client.connect()
     try:

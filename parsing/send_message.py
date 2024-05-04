@@ -56,12 +56,15 @@ async def message_sender(
         message: Message,
         target_channel: str,
         ) -> bool:
+    print('sending')
     can_forward = True
     with_errors = False
     while True:
+        print('sending')
         try:
             await sender(client, message, target_channel, can_forward)
         except rpcerrorlist.FloodWaitError as err:
+            print(err.seconds)
             await sleep(err.seconds)
             await client.send_message('me', f'waited for {err.seconds}')
             continue
@@ -75,8 +78,9 @@ async def message_sender(
         except Exception as err:
             await save_logs(err)
             await client.send_message(
-                'me',
-                f'I can\'t send to {target_channel} please check your permissions')
+                    'me',
+                    f'I can\'t send to {target_channel} please check your permissions'
+                )
             with_errors = True
         await client.send_message('me', f'have been sent message with id: {message.id}')
         await sleep(4)
