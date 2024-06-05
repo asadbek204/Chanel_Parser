@@ -33,19 +33,18 @@ async def get_messages(client: TelegramClient, source_channel: str, limit: int, 
     params = {'entity': source_channel, 'limit': limit}
     if offset_id is not None:
         params.update(max_id=offset_id)
-    print('client.get_messages')
     messages: list[Message] = await client.get_messages(**params)
-    print('get_media_groups from client messages')
     messages, all_group = get_media_groups(messages)
-    print('working')
-    while len(messages) < limit or not all_group:
+    length = len(messages)
+    while length < limit or not all_group:
         if not messages:
-            print('breaking')
             break
-        print('getting other messages', len(messages))
         messages.extend(await get_messages(client, source_channel, limit, messages[-1].id))
-        print('messages getten')
         messages, all_group = get_media_groups(messages)
-        print('new iter')
-    print('return')
+        if length == len(messages):
+            break
+    return messages
+
+async def get_message(client: TelegramClient, source_channel: str, message_ids: list[int]):
+    print(messages := await client.get_messages(source_channel, ids=message_ids))
     return messages

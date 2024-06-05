@@ -1,13 +1,14 @@
 import os
 import json
+from contextlib import asynccontextmanager
 
 from telethon.errors import rpcerrorlist
 from telethon import TelegramClient
 from config import API_ID, API_HASH
 from hashlib import sha256
-from parsing.parser_app import copy_messages_from_channel
+from parsing.parser_app import copy_messages_from_channel, copy_by_id
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, Body
 # from fastapi_users import FastAPIUsers
 # from database.models import User
 # from auth.manager import get_user_manager
@@ -15,7 +16,6 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
 # from auth.schemas import UserRead, UserCreate, UserUpdate
 
 
-app = FastAPI(title="Channel Parser")
 sessions: dict[str, dict] = {}
 sessions_file_name = 'sessions.json'
 
@@ -55,6 +55,22 @@ sessions_file_name = 'sessions.json'
 # )
 #
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global sessions
+    try:
+        sessions = json.load(open(sessions_file_name))
+    except json.decoder.JSONDecodeError:
+        sessions = {}
+    except FileNotFoundError:
+        with open(sessions_file_name, 'x') as created:
+            created.write(json.dumps(sessions))
+    yield
+
+    json.dump(sessions, open(sessions_file_name, 'w'))
+
+app = FastAPI(title="Channel Parser", lifespan=lifespan)
+
 async def create_client(username: str, password: str, session_name: str, phone_code_hash: str):
     sessions[username] = {'password': sha256(password.encode()).hexdigest(), 'session_name': session_name, 'phone_code_hash': phone_code_hash}
 
@@ -92,6 +108,19 @@ async def parse_channel(
         ):
     background_tasks.add_task(copy_messages_from_channel, client, src_channel, target_channel, limit)
     return {'status': 'success', 'message': 'started copying messages'}
+
+
+@app.post('/parse_channel_by_id')
+async def parse_channel_by_id(
+        background_tasks: BackgroundTasks,
+        src_channel: str,
+        target_channel: str,
+        ids: list[int] = Body(),
+        client: TelegramClient = Depends(get_client),
+        ):
+    background_tasks.add_task(copy_by_id, client, src_channel, target_channel, ids)
+    return {'status': 'success', 'message': 'started copying messages'}
+
 
 
 @app.post('/account/authorization')
@@ -152,20 +181,3 @@ async def delete_account(username: str, password: str):
         raise HTTPException(status_code=404, detail='session not found')
     else:
         return {'status': 'success', 'message': 'account successfully deleted'}
-
-
-@app.on_event('startup')
-async def startup():
-    global sessions
-    try:
-        sessions = json.load(open(sessions_file_name))
-    except json.decoder.JSONDecodeError:
-        sessions = {}
-    except FileNotFoundError:
-        with open(sessions_file_name, 'x') as created:
-            created.write(json.dumps(sessions))
-
-
-@app.on_event('shutdown')
-async def shutdown():
-    json.dump(sessions, open(sessions_file_name, 'w'))
