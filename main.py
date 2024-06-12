@@ -181,3 +181,8 @@ async def delete_account(username: str, password: str):
         raise HTTPException(status_code=404, detail='session not found')
     else:
         return {'status': 'success', 'message': 'account successfully deleted'}
+
+
+a: int = 10
+
+print

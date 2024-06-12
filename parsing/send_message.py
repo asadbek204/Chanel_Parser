@@ -7,26 +7,33 @@ from asyncio import sleep
 
 
 async def send_long_caption(
-        client: TelegramClient,
-        message: Message,
-        media,
-        target_channel
-        ) -> bool:
-    sep = '\n'
-    caption = message.message.split('\n')
+    client: TelegramClient, message: Message, media, target_channel
+) -> bool:
+    sep = "\n"
+    caption = message.message.split("\n")
     if len(caption) <= 2:
-        sep = ' '
+        sep = " "
         caption = message.text.split()
     try:
-        await client.send_message(target_channel, message=sep.join(caption[:len(caption)//2]), file=media)
-        await client.send_message(target_channel, message=sep.join(caption[len(caption)//2:]))
+        await client.send_message(
+            target_channel, message=sep.join(caption[: len(caption) // 2]), file=media
+        )
+        await client.send_message(
+            target_channel, message=sep.join(caption[len(caption) // 2:])
+        )
     except Exception as e:
         await save_logs(e)
         return True
     return False
 
 
-async def sender(client: TelegramClient, message: Message, target_channel: int | str, can_forward: bool = False) -> None:
+async def sender(
+    client: TelegramClient,
+    message: Message,
+    target_channel: int | str,
+    can_forward: bool = False,
+) -> None:
+    print(message)
     if isinstance(message, types.MessageService):
         return
     file = []
@@ -35,14 +42,20 @@ async def sender(client: TelegramClient, message: Message, target_channel: int |
         for media in message.media:
             file.append(media if can_forward else await client.download_media(media))
     try:
+        print(file)
         if len(file) != 0:
-            await client.send_message(target_channel, message=message.message, file=file)
+            await client.send_message(
+                target_channel, message=message.message, file=file
+            )
         else:
-            file = await client.download_media(message.message)
+            file = await client.download_media(message.media)
             if can_forward:
                 await client.send_message(target_channel, message=message)
             else:
-                await client.send_message(target_channel, message=message.message, file=file)
+                print(file)
+                await client.send_message(
+                    target_channel, message=message.message, file=file
+                )
     except rpcerrorlist.MediaCaptionTooLongError:
         await send_long_caption(client, message, file, target_channel)
     finally:
@@ -52,37 +65,36 @@ async def sender(client: TelegramClient, message: Message, target_channel: int |
 
 
 async def message_sender(
-        client: TelegramClient,
-        message: Message,
-        target_channel: str,
-        ) -> bool:
-    print('sending')
+    client: TelegramClient,
+    message: Message,
+    target_channel: str,
+) -> bool:
+    print("sending")
     can_forward = True
     with_errors = False
     while True:
-        print('sending')
+        print("sending")
         try:
             await sender(client, message, target_channel, can_forward)
         except rpcerrorlist.FloodWaitError as err:
             print(err.seconds)
             await sleep(err.seconds)
-            await client.send_message('me', f'waited for {err.seconds}')
+            await client.send_message("me", f"waited for {err.seconds}")
             continue
         except rpcerrorlist.TimedOutError:
             await sleep(1)
             continue
         except rpcerrorlist.ChatForwardsRestrictedError:
             can_forward = False
-            await client.send_message('me', 'bypassing chat restrictions')
+            await client.send_message("me", "bypassing chat restrictions")
             continue
         except Exception as err:
             await save_logs(err)
             await client.send_message(
-                    'me',
-                    f'I can\'t send to {target_channel} please check your permissions'
-                )
+                "me", f"I can't send to {target_channel} please check your permissions"
+            )
             with_errors = True
-        await client.send_message('me', f'have been sent message with id: {message.id}')
+        await client.send_message("me", f"have been sent message with id: {message.id}")
         await sleep(4)
         break
     return with_errors
